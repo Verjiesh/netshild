@@ -1,0 +1,4 @@
+# TermuxNetShield — Whitelist
+# Domínios nesta lista NÃO serão bloqueados.
+# Um por linha, ex: doubleclick.net
+

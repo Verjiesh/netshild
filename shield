@@ -1,0 +1,11 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# =============================================================================
+# TermuxNetShield — Wrapper CLI
+# =============================================================================
+# Uso: shield <comando> [opções]
+# Delega para shield.py com o Python correto do ambiente.
+# Suporta symlinks (readlink -f).
+# =============================================================================
+SCRIPT="$(readlink -f "$0")"
+PROJETO="$(dirname "$SCRIPT")"
+exec python3 "$PROJETO/shield.py" "$@"
