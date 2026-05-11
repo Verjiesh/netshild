@@ -1,198 +1,198 @@
-# TermuxNetShield — Custom Blocklist
-# Dominios nesta lista serao bloqueados ALEM das fontes automaticas.
-# Um por linha, ex: meudominio-personalizado.com
-#
-# ============================================================
-# YOUTUBE ADS — Dominios de anuncio, rastreamento e telemetria
-# ============================================================
-# Rede de anuncios do Google / YouTube
-doubleclick.net
-ad.doubleclick.net
-ad.doubleclick.net
-ads.doubleclick.net
-adserve.doubleclick.net
-adx.doubleclick.net
-cm.g.doubleclick.net
-dfp.doubleclick.net
-dp.g.doubleclick.net
-feed.g.doubleclick.net
-googleads.g.doubleclick.net
-g.doubleclick.net
-image.doubleclick.net
-impicit.doubleclick.net
-mobile.googleadservices.com
-n339.ads.doubleclick.net
-pagead.doubleclick.net
-pagead2.doubleclick.net
-partner.googleadservices.com
-pubads.g.doubleclick.net
-securepubads.g.doubleclick.net
-static.doubleclick.net
-tpc.googlesyndication.com
-datametrics.g.doubleclick.net
-adclick.g.doubleclick.net
-ad-g.doubleclick.net
-
-# Google Ads / AdSense / AdWords
-googleads.com
-googleadservices.com
-pagead2.googlesyndication.com
-pagead.l.google.com
-googlesyndication.com
-googletagservices.com
-googletagmanager.com
-adservice.google.com
-adservice.google.pt
-adservice.google.co.uk
-adservice.google.ca
-adservice.google.com.br
-partnerad.l.google.com
-static.googleadsserving.cn
-www.googleadservices.com
-www.googletagmanager.com
-
-# YouTube especifico — rastreamento, telemetria e ads
-ad.youtube.com
-ads.youtube.com
-s.youtube.com
-youtubei.googleapis.com
-yt3.ggpht.com
-i.ytimg.com
-stats.ls.gcp.mozilla.net
-gg.google.com
-www.youtube-nocookie.com
-
-# Anuncios em video / VAST / video ads
-s0.2mdn.net
-s1.2mdn.net
-s2.2mdn.net
-adserver.adtechus.com
-adserver.adtech.de
-adtech.de
-adtechus.com
-ad-emea.doubleclick.net
-ad-asia.doubleclick.net
-ad-apac.doubleclick.net
-
-# Rede de anuncios terceiros (usados no YouTube)
-adserver.google.com
-csi.gstatic.com
-fundingchoicesmessages.google.com
-c.amazon-adsystem.com
-s.amazon-adsystem.com
-aax.amazon-adsystem.com
-amazon-adsystem.com
-pixel.adsafeprotected.com
-anymind360.com
-anymind.com
-cdn.anymind.com
-moat.com
-moatads.com
-secure.moat.com
-z.moatads.com
-pixel.moatads.com
-px.moatads.com
-collector.moatads.com
-
-# Analytics e trackers
-google-analytics.com
-www.google-analytics.com
-ssl.google-analytics.com
-stats.g.doubleclick.net
-adservice.google.co.in
-adservice.google.co.uk
-adservice.google.de
-adservice.google.fr
-adservice.google.es
-adservice.google.it
-adservice.google.co.jp
-adservice.google.com.au
-adservice.google.com.br
-adservice.google.ca
-adservice.google.nl
-adservice.google.ru
-adservice.google.pl
-adservice.google.com.mx
-adservice.google.cl
-adservice.google.com.ar
-adservice.google.com.co
-adservice.google.com.pe
-adservice.google.pt
-adservice.google.be
-adservice.google.ch
-adservice.google.at
-adservice.google.se
-adservice.google.no
-adservice.google.dk
-adservice.google.fi
-adservice.google.ie
-adservice.google.co.kr
-adservice.google.co.th
-adservice.google.com.tw
-adservice.google.com.hk
-adservice.google.co.id
-adservice.google.com.sg
-adservice.google.co.nz
-adservice.google.co.za
-adservice.google.gr
-adservice.google.pt
-adservice.google.hu
-adservice.google.cz
-adservice.google.sk
-adservice.google.ro
-adservice.google.bg
-adservice.google.rs
-adservice.google.hr
-adservice.google.si
-adservice.google.lt
-adservice.google.lv
-adservice.google.ee
-adservice.google.is
-adservice.google.lu
-adservice.google.mt
-adservice.google.ae
-adservice.google.sa
-adservice.google.il
-adservice.google.co.il
-adservice.google.com.eg
-adservice.google.com.pk
-adservice.google.com.ng
-adservice.google.com.ua
-adservice.google.kz
-adservice.google.com.vn
-adservice.google.com.ph
-adservice.google.com.my
-adservice.google.co.ve
-adservice.google.com.do
-adservice.google.com.pr
-adservice.google.com.ec
-adservice.google.com.gt
-adservice.google.com.cr
-adservice.google.com.pa
-adservice.google.com.py
-adservice.google.com.bo
-adservice.google.com.uy
-adservice.google.com.sv
-adservice.google.com.hn
-adservice.google.com.ni
-adservice.google.tt
-
-# Redes sociais e widgets de terceiros
-platform.twitter.com
-syndication.twitter.com
-t.co
-connect.facebook.net
-www.facebook.com
-pixel.facebook.com
-an.facebook.com
-staticxx.facebook.com
-pixel.quantserve.com
-scorecardresearch.com
-ib.adnxs.com
-adnxs.com
-ads.pubmatic.com
-pubmatic.com
-adsrvr.org
-ads.stickyadstv.com
-ad-g.doubleclick.net
-app-measurement.com
+     1|# TermuxNetShield — Custom Blocklist
+     2|# Dominios nesta lista serao bloqueados ALEM das fontes automaticas.
+     3|# Um por linha, ex: meudominio-personalizado.com
+     4|#
+     5|# ============================================================
+     6|# YOUTUBE ADS — Dominios de anuncio, rastreamento e telemetria
+     7|# ============================================================
+     8|# Rede de anuncios do Google / YouTube
+     9|doubleclick.net
+    10|ad.doubleclick.net
+    11|ads.doubleclick.net
+    12|adserve.doubleclick.net
+    13|adx.doubleclick.net
+    14|cm.g.doubleclick.net
+    15|dfp.doubleclick.net
+    16|dp.g.doubleclick.net
+    17|feed.g.doubleclick.net
+    18|googleads.g.doubleclick.net
+    19|g.doubleclick.net
+    20|image.doubleclick.net
+    21|impicit.doubleclick.net
+    22|mobile.googleadservices.com
+    23|n339.ads.doubleclick.net
+    24|pagead.doubleclick.net
+    25|pagead2.doubleclick.net
+    26|partner.googleadservices.com
+    27|pubads.g.doubleclick.net
+    28|securepubads.g.doubleclick.net
+    29|static.doubleclick.net
+    30|tpc.googlesyndication.com
+    31|datametrics.g.doubleclick.net
+    32|adclick.g.doubleclick.net
+    33|ad-g.doubleclick.net
+    34|
+    35|# Google Ads / AdSense / AdWords
+    36|googleads.com
+    37|googleadservices.com
+    38|pagead2.googlesyndication.com
+    39|pagead.l.google.com
+    40|googlesyndication.com
+    41|googletagservices.com
+    42|googletagmanager.com
+    43|adservice.google.com
+    44|adservice.google.pt
+    45|adservice.google.co.uk
+    46|adservice.google.ca
+    47|adservice.google.com.br
+    48|partnerad.l.google.com
+    49|static.googleadsserving.cn
+    50|www.googleadservices.com
+    51|www.googletagmanager.com
+    52|
+    53|# YouTube especifico — rastreamento, telemetria e ads
+    54|ad.youtube.com
+    55|ads.youtube.com
+    56|s.youtube.com
+    57|youtubei.googleapis.com
+    58|yt3.ggpht.com
+    59|i.ytimg.com
+    60|stats.ls.gcp.mozilla.net
+    61|gg.google.com
+    62|www.youtube-nocookie.com
+    63|
+    64|# Anuncios em video / VAST / video ads
+    65|s0.2mdn.net
+    66|s1.2mdn.net
+    67|s2.2mdn.net
+    68|adserver.adtechus.com
+    69|adserver.adtech.de
+    70|adtech.de
+    71|adtechus.com
+    72|ad-emea.doubleclick.net
+    73|ad-asia.doubleclick.net
+    74|ad-apac.doubleclick.net
+    75|
+    76|# Rede de anuncios terceiros (usados no YouTube)
+    77|adserver.google.com
+    78|csi.gstatic.com
+    79|fundingchoicesmessages.google.com
+    80|c.amazon-adsystem.com
+    81|s.amazon-adsystem.com
+    82|aax.amazon-adsystem.com
+    83|amazon-adsystem.com
+    84|pixel.adsafeprotected.com
+    85|anymind360.com
+    86|anymind.com
+    87|cdn.anymind.com
+    88|moat.com
+    89|moatads.com
+    90|secure.moat.com
+    91|z.moatads.com
+    92|pixel.moatads.com
+    93|px.moatads.com
+    94|collector.moatads.com
+    95|
+    96|# Analytics e trackers
+    97|google-analytics.com
+    98|www.google-analytics.com
+    99|ssl.google-analytics.com
+   100|stats.g.doubleclick.net
+   101|adservice.google.co.in
+   102|adservice.google.co.uk
+   103|adservice.google.de
+   104|adservice.google.fr
+   105|adservice.google.es
+   106|adservice.google.it
+   107|adservice.google.co.jp
+   108|adservice.google.com.au
+   109|adservice.google.com.br
+   110|adservice.google.ca
+   111|adservice.google.nl
+   112|adservice.google.ru
+   113|adservice.google.pl
+   114|adservice.google.com.mx
+   115|adservice.google.cl
+   116|adservice.google.com.ar
+   117|adservice.google.com.co
+   118|adservice.google.com.pe
+   119|adservice.google.pt
+   120|adservice.google.be
+   121|adservice.google.ch
+   122|adservice.google.at
+   123|adservice.google.se
+   124|adservice.google.no
+   125|adservice.google.dk
+   126|adservice.google.fi
+   127|adservice.google.ie
+   128|adservice.google.co.kr
+   129|adservice.google.co.th
+   130|adservice.google.com.tw
+   131|adservice.google.com.hk
+   132|adservice.google.co.id
+   133|adservice.google.com.sg
+   134|adservice.google.co.nz
+   135|adservice.google.co.za
+   136|adservice.google.gr
+   137|adservice.google.pt
+   138|adservice.google.hu
+   139|adservice.google.cz
+   140|adservice.google.sk
+   141|adservice.google.ro
+   142|adservice.google.bg
+   143|adservice.google.rs
+   144|adservice.google.hr
+   145|adservice.google.si
+   146|adservice.google.lt
+   147|adservice.google.lv
+   148|adservice.google.ee
+   149|adservice.google.is
+   150|adservice.google.lu
+   151|adservice.google.mt
+   152|adservice.google.ae
+   153|adservice.google.sa
+   154|adservice.google.il
+   155|adservice.google.co.il
+   156|adservice.google.com.eg
+   157|adservice.google.com.pk
+   158|adservice.google.com.ng
+   159|adservice.google.com.ua
+   160|adservice.google.kz
+   161|adservice.google.com.vn
+   162|adservice.google.com.ph
+   163|adservice.google.com.my
+   164|adservice.google.co.ve
+   165|adservice.google.com.do
+   166|adservice.google.com.pr
+   167|adservice.google.com.ec
+   168|adservice.google.com.gt
+   169|adservice.google.com.cr
+   170|adservice.google.com.pa
+   171|adservice.google.com.py
+   172|adservice.google.com.bo
+   173|adservice.google.com.uy
+   174|adservice.google.com.sv
+   175|adservice.google.com.hn
+   176|adservice.google.com.ni
+   177|adservice.google.tt
+   178|
+   179|# Redes sociais e widgets de terceiros
+   180|platform.twitter.com
+   181|syndication.twitter.com
+   182|t.co
+   183|connect.facebook.net
+   184|www.facebook.com
+   185|pixel.facebook.com
+   186|an.facebook.com
+   187|staticxx.facebook.com
+   188|pixel.quantserve.com
+   189|scorecardresearch.com
+   190|ib.adnxs.com
+   191|adnxs.com
+   192|ads.pubmatic.com
+   193|pubmatic.com
+   194|adsrvr.org
+   195|ads.stickyadstv.com
+   196|ad-g.doubleclick.net
+   197|app-measurement.com
+   198|

@@ -34,7 +34,8 @@ except ImportError:
 
 # ─── Diretórios e arquivos ───────────────────────────────────────────────────
 HOME = os.path.expanduser("~")
-PROJETO = os.path.join(HOME, "TermuxNetShield")
+# Detecta o diretório raiz do projeto (sobe 2 níveis: scripts/dns_server.py → projeto/)
+PROJETO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLOCKLIST_PATH = os.path.join(PROJETO, "blocklists", "ads.conf")
 WHITELIST_PATH = os.path.join(PROJETO, "config", "whitelist.txt")
 LOG_PATH = os.path.join(PROJETO, "logs", "dns_server.log")
@@ -163,9 +164,9 @@ class DNSHandler:
     def __init__(self, blocklist, logger=None, cname_uncloak=True):
         self.blocklist = blocklist
         self.logger = logger or logging.getLogger(__name__)
-        self.sock_upstream = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.cname_uncloak = cname_uncloak
-        self.sock_cname = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # Sockets são criados sob demanda em cada chamada para evitar
+        # race conditions com respostas UDP atrasadas
 
     def processar(self, data, addr):
         """
@@ -244,21 +245,32 @@ class DNSHandler:
         """
         Encaminha a consulta para um servidor DNS upstream.
         Tenta cada upstream em ordem até obter resposta.
+        Cria um socket novo por tentativa para evitar respostas atrasadas.
         """
         dados_originais = request.pack()
 
         for upstream_addr in UPSTREAM_DNS:
             try:
-                self.sock_upstream.settimeout(TIMEOUT_UPSTREAM)
-                self.sock_upstream.sendto(dados_originais, upstream_addr)
-                resposta, _ = self.sock_upstream.recvfrom(4096)
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.settimeout(TIMEOUT_UPSTREAM)
+                sock.sendto(dados_originais, upstream_addr)
+                resposta, _ = sock.recvfrom(4096)
+                sock.close()
                 self.logger.info("  ✅ LIBERADO: %s via %s:%d", qname, *upstream_addr)
                 return resposta
             except socket.timeout:
                 self.logger.warning("  ⏰ TIMEOUT: %s via %s:%d", qname, *upstream_addr)
+                try:
+                    sock.close()
+                except Exception:
+                    pass
                 continue
             except Exception as e:
                 self.logger.error("  ❌ ERRO upstream %s:%d — %s", *upstream_addr, e)
+                try:
+                    sock.close()
+                except Exception:
+                    pass
                 continue
 
         # Todos os upstreams falharam → retorna SERVFAIL
@@ -286,20 +298,20 @@ class DNSHandler:
             return None
         
         try:
-            from dnslib import DNSRecord, DNSHeader, QTYPE, RR
+            from dnslib import DNSRecord, QTYPE
             
-            # Construir consulta CNAME
-            tid = os.getpid() & 0xFFFF
-            header = DNSHeader(id=tid, qr=0, opcode=0, rd=1)
-            q = DNSRecord(header, q=DNSRecord.parse(f"{dominio}.").q)
-            q.q.qtype = QTYPE.CNAME
+            # Construir consulta CNAME usando DNSRecord.question() (correto)
+            q = DNSRecord.question(dominio, qtype=QTYPE.CNAME)
             dados = q.pack()
             
-            self.sock_cname.settimeout(TIMEOUT_UPSTREAM)
             for upstream_addr in UPSTREAM_DNS:
+                sock = None
                 try:
-                    self.sock_cname.sendto(dados, upstream_addr)
-                    resposta_bytes, _ = self.sock_cname.recvfrom(4096)
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    sock.settimeout(TIMEOUT_UPSTREAM)
+                    sock.sendto(dados, upstream_addr)
+                    resposta_bytes, _ = sock.recvfrom(4096)
+                    
                     resposta = DNSRecord.parse(resposta_bytes)
                     
                     # Extrair CNAME da resposta
@@ -309,7 +321,7 @@ class DNSHandler:
                             if destino != dominio:
                                 return self._resolver_cadeia_cname(destino, profundidade - 1) or destino
                     
-                    # Se tem A record, é terminal (sem CNAME)
+                    # Se tem A/AAAA record, é terminal (sem CNAME)
                     for rr in resposta.rr:
                         if rr.rtype in (QTYPE.A, QTYPE.AAAA):
                             return dominio
@@ -322,6 +334,12 @@ class DNSHandler:
                 except Exception as e:
                     self.logger.debug("Erro CNAME %s via %s: %s", dominio, upstream_addr, e)
                     continue
+                finally:
+                    if sock:
+                        try:
+                            sock.close()
+                        except Exception:
+                            pass
             
         except Exception as e:
             self.logger.debug("Erro ao resolver CNAME %s: %s", dominio, e)
@@ -329,9 +347,8 @@ class DNSHandler:
         return None
 
     def fechar(self):
-        """Libera os sockets upstream e CNAME."""
-        self.sock_upstream.close()
-        self.sock_cname.close()
+        """Não há sockets persistentes para liberar (criados sob demanda)."""
+        pass
 
 
 # =============================================================================

@@ -26,7 +26,9 @@ from pathlib import Path
 
 # ─── Caminhos do projeto ─────────────────────────────────────────────────────
 HOME = os.path.expanduser("~")
-PROJETO = os.path.join(HOME, "TermuxNetShield")
+# Detecta o diretório real onde o script está (funciona com qualquer nome de diretório)
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJETO = _SCRIPT_DIR
 SCRIPTS_DIR = os.path.join(PROJETO, "scripts")
 LOGS_DIR = os.path.join(PROJETO, "logs")
 BLOCKLIST_DIR = os.path.join(PROJETO, "blocklists")
@@ -108,7 +110,7 @@ def _processo_existe(pid):
     except (OSError, ProcessLookupError):
         return False
     except PermissionError:
-        return True  # existe mas sem permissão
+        return False  # sem permissão = processo de outro usuário, tratar como ausente
 
 
 def _servidor_rodando():
@@ -389,18 +391,30 @@ def cmd_stop(args):
     """Para o servidor DNS."""
     cabecalho("TermuxNetShield — Parando Serviço")
 
-    # Coletar estatísticas antes de parar
+    # Coletar estatísticas antes de parar (apenas últimas 50.000 linhas para evitar acumulação)
     bloqueados = 0
     liberados = 0
     total = 0
 
     if os.path.exists(LOG_FILE):
-        with open(LOG_FILE, encoding="utf-8", errors="ignore") as f:
-            for line in f:
+        try:
+            result = subprocess.run(
+                ["tail", "-n", "50000", LOG_FILE],
+                capture_output=True, text=True, timeout=10
+            )
+            for line in result.stdout.splitlines():
                 if "🛡️ BLOQUEADO" in line:
                     bloqueados += 1
                 elif "✅ LIBERADO" in line:
                     liberados += 1
+        except (subprocess.SubprocessError, FileNotFoundError):
+            # Fallback: ler arquivo inteiro (lento, mas funciona)
+            with open(LOG_FILE, encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    if "🛡️ BLOQUEADO" in line:
+                        bloqueados += 1
+                    elif "✅ LIBERADO" in line:
+                        liberados += 1
         total = bloqueados + liberados
 
     pid_encontrado = None
@@ -631,7 +645,7 @@ MODOS_BLOCKLIST = {
             "OISD_Full": ("https://big.oisd.nl/", "adblock"),
             "AdGuard_DNS": ("https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt", "adguard"),
             "StevenBlack": ("https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", "hosts"),
-            "AnudeepND_Ads": ("https://raw.githubusercontent.com/AnudeepND/blacklist/master/adservers.txt", "dominios"),
+            "AnudeepND_Ads": ("https://raw.githubusercontent.com/AnudeepND/blacklist/master/adservers.txt", "hosts"),
             "SomeoneWhoCares": ("https://someonewhocares.org/hosts/zero/hosts", "hosts"),
             "1Hosts_Lite": ("https://raw.githubusercontent.com/badmojr/1Hosts/master/Lite/hosts.txt", "hosts"),
         },
@@ -642,7 +656,7 @@ MODOS_BLOCKLIST = {
             "OISD_Full": ("https://big.oisd.nl/", "adblock"),
             "AdGuard_DNS": ("https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt", "adguard"),
             "StevenBlack": ("https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", "hosts"),
-            "AnudeepND_Ads": ("https://raw.githubusercontent.com/AnudeepND/blacklist/master/adservers.txt", "dominios"),
+            "AnudeepND_Ads": ("https://raw.githubusercontent.com/AnudeepND/blacklist/master/adservers.txt", "hosts"),
             "SomeoneWhoCares": ("https://someonewhocares.org/hosts/zero/hosts", "hosts"),
             "1Hosts_Pro": ("https://raw.githubusercontent.com/badmojr/1Hosts/master/Pro/hosts.txt", "hosts"),
             "Energized_Basic": ("https://raw.githubusercontent.com/EnergizedProtection/block/master/basic/formats/hosts.txt", "hosts"),
@@ -1504,9 +1518,15 @@ def main():
 
     elif comando in ("config", "cfg"):
         if rest and len(rest) >= 3 and rest[0] == "set" and rest[1] == "mode":
-            class ConfigArgs:
-                modo = rest[2]
-            cmd_config(ConfigArgs())
+            modo = rest[2].strip().lower()
+            if modo in MODOS_BLOCKLIST:
+                class ConfigArgs:
+                    pass
+                setattr(ConfigArgs, "modo", modo)
+                cmd_config(ConfigArgs())
+            else:
+                erro(f"Modo inválido: '{modo}'")
+                info("Modos disponíveis: light, medium, hard")
         else:
             cmd_config(args)
 
