@@ -141,6 +141,21 @@ def _is_termux():
     return os.path.isdir("/data/data/com.termux")
 
 
+def _detectar_ip_rede():
+    """Detecta o IP do dispositivo na rede local (WiFi)."""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(3)
+        sock.connect(("8.8.8.8", 53))
+        ip = sock.getsockname()[0]
+        sock.close()
+        if ip and ip != "127.0.0.1":
+            return ip
+    except Exception:
+        pass
+    return None
+
+
 def _verificar_termux():
     """Avisa se não estiver no Termux."""
     if not _is_termux():
@@ -381,6 +396,55 @@ def cmd_start(args):
         if os.path.exists(PID_FILE):
             os.remove(PID_FILE)
         sys.exit(1)
+
+
+# =============================================================================
+# COMANDO: network (modo rede)
+# =============================================================================
+
+def cmd_network(args):
+    """Inicia o servidor DNS para a rede toda."""
+    cabecalho("TermuxNetShield — Modo Rede 🌐")
+
+    ip_rede = _detectar_ip_rede()
+    if not ip_rede:
+        erro("Não foi possível detectar o IP da rede WiFi.")
+        erro("Conecte-se a uma rede WiFi e tente novamente.")
+        sys.exit(1)
+
+    info(f"IP do dispositivo na rede: {Cores.texto(ip_rede, Cores.VERDE)}")
+    print()
+
+    # Iniciar servidor em 0.0.0.0 para toda a rede
+    class NetArgs:
+        port = PORTA_PADRAO
+        host = "0.0.0.0"
+        verbose = False
+        cname_uncloak = True
+
+    cmd_start(NetArgs())
+
+    # Só mostra info de rede se start foi bem-sucedido
+    rodando, pid_info = _servidor_rodando()
+    if not rodando:
+        return  # cmd_start já mostrou o erro
+
+    print()
+    cabecalho("🌐 Configure outros dispositivos")
+    print()
+    print(f"  {Cores.texto('No WiFi de cada dispositivo:', Cores.NEGRITO)}")
+    print(f"    DNS 1 (ou primário): {Cores.texto(ip_rede, Cores.VERDE)}")
+    print(f"    Porta:                {Cores.texto(str(PORTA_PADRAO), Cores.VERDE)}")
+    print()
+    print(f"  Exemplo (Linux/Mac):")
+    print(f"    dig @{ip_rede} -p {PORTA_PADRAO} google.com")
+    print()
+    print(f"  {Cores.texto('⚠️  Este dispositivo Android precisa de um app', Cores.AMARELO)}")
+    print(f"  {Cores.texto('para redirecionar o próprio DNS → netshild.', Cores.AMARELO)}")
+    print(f"  {Cores.texto('Instale PersonalDNSfilter (F-Droid) e configure:', Cores.CIANO)}")
+    print(f"    Upstream DNS: 127.0.0.1:{PORTA_PADRAO}")
+    print(f"    Ative a VPN local → tudo bloqueado! 🛡️")
+    print()
 
 
 # =============================================================================
@@ -1379,6 +1443,57 @@ def cmd_stats(args):
 
 
 # =============================================================================
+# COMANDO: boot-enable / boot-disable
+# =============================================================================
+
+BOOT_DIR = os.path.expanduser("~/.termux/boot")
+BOOT_SCRIPT_SRC = os.path.join(SCRIPTS_DIR, "boot-start.sh")
+
+def cmd_boot_enable(args):
+    """Instala auto-start na inicialização do Android (Termux:Boot)."""
+    cabecalho("TermuxNetShield — Auto-start")
+
+    boot_dir = BOOT_DIR
+    os.makedirs(boot_dir, exist_ok=True)
+
+    destino = os.path.join(boot_dir, "netshild-start.sh")
+
+    if os.path.exists(destino):
+        aviso("Auto-start já está instalado.")
+        info(f"Arquivo: {destino}")
+        return
+
+    if not os.path.exists(BOOT_SCRIPT_SRC):
+        erro(f"Script de boot não encontrado: {BOOT_SCRIPT_SRC}")
+        sys.exit(1)
+
+    import shutil
+    shutil.copy2(BOOT_SCRIPT_SRC, destino)
+    os.chmod(destino, 0o755)
+    sucesso(f"Auto-start instalado em:\n  {destino}")
+    print()
+    info("O netshild iniciará automaticamente ao ligar o celular.")
+    info("Certifique-se de que o app Termux:Boot (F-Droid) está instalado")
+    info("e que o Termux tem permissão para iniciar na inicialização.")
+    print()
+    info("Para remover: shield boot-disable")
+
+
+def cmd_boot_disable(args):
+    """Remove auto-start da inicialização."""
+    cabecalho("TermuxNetShield — Remover Auto-start")
+
+    destino = os.path.join(BOOT_DIR, "netshild-start.sh")
+    if os.path.exists(destino):
+        os.remove(destino)
+        sucesso("Auto-start removido.")
+    else:
+        aviso("Auto-start não está instalado.")
+    print()
+    info("Para reinstalar: shield boot-enable")
+
+
+# =============================================================================
 # COMANDO: help
 # =============================================================================
 
@@ -1395,7 +1510,8 @@ def cmd_help(args):
     print("  uninstall            Remover completamente o projeto")
     print()
     print(Cores.texto("SERVIÇO DNS:", Cores.CIANO))
-    print("  start                Iniciar servidor DNS (porta 5353)")
+    print("  start                Iniciar servidor DNS (porta 5353, apenas local)")
+    print("  network              Iniciar servidor DNS para toda a rede WiFi 🌐")
     print("  stop                 Parar servidor DNS")
     print("  restart              Reiniciar servidor DNS")
     print("  status               Mostrar status detalhado do servidor")
@@ -1427,6 +1543,11 @@ def cmd_help(args):
     print("                       (ativado por padrão)")
     print("  shield start --no-cname-uncloak")
     print("                       Desativar CNAME uncloaking (economiza bateria)")
+    print()
+    print(Cores.texto("AUTO-START (Termux:Boot):", Cores.CIANO))
+    print("  boot-enable          Instalar auto-start na inicialização do Android")
+    print("  boot-disable         Remover auto-start")
+    print("  (Requer Termux:Boot instalado da F-Droid)")
     print()
     print(Cores.texto("EXEMPLOS:", Cores.NEGRITO))
     print("  shield start         # Iniciar bloqueio")
@@ -1467,6 +1588,15 @@ def main():
         p.add_argument("--no-cname-uncloak", dest="cname_uncloak", action="store_false")
         subargs = p.parse_args(rest)
         cmd_start(subargs)
+
+    elif comando == "network":
+        cmd_network(args)
+
+    elif comando == "boot-enable":
+        cmd_boot_enable(args)
+
+    elif comando == "boot-disable":
+        cmd_boot_disable(args)
 
     elif comando == "stop":
         cmd_stop(args)
@@ -1540,9 +1670,9 @@ def main():
         erro(f"Comando desconhecido: '{comando}'")
         print()
         info("Comandos disponíveis:")
-        print("  install, start, stop, restart, status, reload,")
+        print("  install, start, network, stop, restart, status, reload,")
         print("  update, logs, analyze, stats, whitelist, config,")
-        print("  uninstall, help")
+        print("  boot-enable, boot-disable, uninstall, help")
         print()
         info("Use: shield help  (para ajuda detalhada)")
         sys.exit(1)
