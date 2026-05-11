@@ -1628,6 +1628,127 @@ def cmd_dns_self(args):
 
 
 # =============================================================================
+# COMANDO: dns-toggle (setup completo recomendado)
+# =============================================================================
+
+APK_URL = "https://f-droid.org/repo/dnsfilter.android_1505900.apk"
+APK_PATH = os.path.join(HOME, "storage", "downloads", "netshield-pdnsf.apk")
+
+def cmd_dns_toggle(args):
+    """Setup completo: netshild + PersonalDNSfilter + config automática."""
+    cabecalho("TermuxNetShield — DNS Toggle 🛡️")
+    print("  Setup completo em 3 passos:")
+    print()
+    print(f"  {Cores.texto('1.', Cores.VERDE)} Baixar PersonalDNSfilter")
+    print(f"  {Cores.texto('2.', Cores.VERDE)} Instalar e configurar")
+    print(f"  {Cores.texto('3.', Cores.VERDE)} Iniciar netshild + ativar VPN")
+    print()
+
+    # ── Passo 1: Verificar se já está instalado ──
+    info("Verificando se PersonalDNSfilter já está instalado...")
+    try:
+        result = subprocess.run(
+            ["pm", "list", "packages", "dnsfilter"],
+            capture_output=True, text=True, timeout=5
+        )
+        if "dnsfilter.android" in result.stdout:
+            sucesso("PersonalDNSfilter já está instalado!")
+            instalado = True
+        else:
+            instalado = False
+    except Exception:
+        instalado = False
+
+    if not instalado:
+        # ── Baixar APK ──
+        info("Baixando PersonalDNSfilter do F-Droid...")
+        import urllib.request
+        try:
+            req = urllib.request.Request(
+                APK_URL,
+                headers={"User-Agent": "TermuxNetShield/2.0"}
+            )
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                dados_apk = resp.read()
+            os.makedirs(os.path.dirname(APK_PATH), exist_ok=True)
+            with open(APK_PATH, "wb") as f:
+                f.write(dados_apk)
+            tamanho = len(dados_apk) / 1024
+            sucesso(f"APK baixado ({tamanho:.0f} KB): {APK_PATH}")
+        except Exception as e:
+            erro(f"Falha ao baixar APK: {e}")
+            info("Baixe manualmente de: https://f-droid.org/packages/dnsfilter.android/")
+            sys.exit(1)
+
+        # ── Abrir instalador ──
+        print()
+        info("Abrindo instalador do Android...")
+        print(f"  {Cores.texto('👉 Toque em INSTALAR na tela do celular', Cores.VERDE)}")
+        print()
+        try:
+            subprocess.run([
+                "am", "start", "-a", "android.intent.action.VIEW",
+                "-d", f"content://com.android.externalstorage.documents/document/primary%3ADownload%2Fnetshield-pdnsf.apk",
+                "-t", "application/vnd.android.package-archive"
+            ], timeout=5)
+        except Exception:
+            subprocess.run([
+                "am", "start", "-a", "android.intent.action.VIEW",
+                "-d", f"file:///storage/emulated/0/Download/netshield-pdnsf.apk",
+                "-t", "application/vnd.android.package-archive"
+            ], timeout=5)
+
+        print(f"  {Cores.texto('📱 O instalador abriu no seu celular.', Cores.CIANO)}")
+        print(f"  {Cores.texto('   Toque em INSTALAR e depois volte aqui.', Cores.CIANO)}")
+        print()
+        info("Aguardando instalação (30s)...")
+        import time
+        time.sleep(30)
+        print()
+
+    # ── Passo 2: Iniciar netshild ──
+    rodando, _ = _servidor_rodando()
+    if not rodando:
+        info("Iniciando servidor DNS (netshild)...")
+        class StartArgs:
+            port = PORTA_PADRAO
+            host = "127.0.0.1"
+            verbose = False
+            cname_uncloak = True
+        cmd_start(StartArgs())
+        rodando, _ = _servidor_rodando()
+
+    if not rodando:
+        erro("Falha ao iniciar netshild.")
+        sys.exit(1)
+
+    # ── Passo 3: Instruções ──
+    print()
+    print(Cores.texto("╔══════════════════════════════════════════════════════╗", Cores.VERDE))
+    print(Cores.texto("║  ✅ Tudo pronto! Configure o app agora:             ║", Cores.VERDE))
+    print(Cores.texto("╚══════════════════════════════════════════════════════╝", Cores.VERDE))
+    print()
+    print(f"  {Cores.texto('1. Abra o PersonalDNSfilter', Cores.NEGRITO)}")
+    print()
+    print(f"  {Cores.texto('2. Vá em: ⋮ → Configurações → Upstream DNS', Cores.NEGRITO)}")
+    print(f"     Selecione 'Custom DNS' e digite:")
+    print(f"     {Cores.texto('127.0.0.1:5353', Cores.CIANO)}")
+    print()
+    print(f"  {Cores.texto('3. Volte e ative: ⋮ → Ativar', Cores.NEGRITO)}")
+    print(f"     (ou toque no botão ON/OFF)")
+    print(f"     Confirme a permissão de VPN → Aceitar")
+    print()
+    print(f"  {Cores.texto('4. Pronto! 🛡️', Cores.VERDE)}")
+    print(f"     Todo DNS do celular → netshild → 721k bloqueados!")
+    print()
+    print(f"  Para ver os bloqueios ao vivo:")
+    print(f"    {Cores.texto('shield logs -f', Cores.CIANO)}")
+    print()
+    info("O PersonalDNSfilter continua ativo mesmo se o Termux fechar.")
+    info("O netshild precisa estar rodando (auto-start: shield boot-enable).")
+
+
+# =============================================================================
 # COMANDO: help
 # =============================================================================
 
@@ -1685,7 +1806,12 @@ def cmd_help(args):
     print()
     print(Cores.texto("DNS PRIVADO (sem root, sem apps):", Cores.CIANO))
     print("  dns-self             Configurar DNS-over-TLS + Private DNS nativo")
-    print("                       Faz todo o Android usar o netshild 🛡️")
+    print("                       (requer root para porta 853)")
+    print()
+    print(Cores.texto("SETUP RECOMENDADO:", Cores.CIANO))
+    print("  dns-toggle           Setup completo: baixa + instala + configura")
+    print("                       netshild + PersonalDNSfilter (VPN local)")
+    print("                       Bloqueio TOTAL sem root! 🛡️")
     print()
     print(Cores.texto("EXEMPLOS:", Cores.NEGRITO))
     print("  shield start         # Iniciar bloqueio")
@@ -1738,6 +1864,9 @@ def main():
 
     elif comando in ("dns-self", "private-dns", "dot"):
         cmd_dns_self(args)
+
+    elif comando in ("dns-toggle", "toggle", "setup"):
+        cmd_dns_toggle(args)
 
     elif comando == "stop":
         cmd_stop(args)
@@ -1813,7 +1942,8 @@ def main():
         info("Comandos disponíveis:")
         print("  install, start, network, stop, restart, status, reload,")
         print("  update, logs, analyze, stats, whitelist, config,")
-        print("  dns-self, boot-enable, boot-disable, uninstall, help")
+        print("  dns-self, dns-toggle, boot-enable, boot-disable,")
+        print("  uninstall, help")
         print()
         info("Use: shield help  (para ajuda detalhada)")
         sys.exit(1)
