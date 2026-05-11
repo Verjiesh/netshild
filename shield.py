@@ -1494,6 +1494,140 @@ def cmd_boot_disable(args):
 
 
 # =============================================================================
+# COMANDO: dns-self (DNS-over-TLS + Private DNS)
+# =============================================================================
+
+DOT_PROXY_SCRIPT = os.path.join(SCRIPTS_DIR, "dot_proxy.py")
+
+def cmd_dns_self(args):
+    """Configura DNS-over-TLS para usar o Private DNS do Android."""
+    cabecalho("TermuxNetShield — DNS Self 🛡️")
+
+    if not os.path.exists(DOT_PROXY_SCRIPT):
+        erro(f"Proxy DoT não encontrado: {DOT_PROXY_SCRIPT}")
+        sys.exit(1)
+
+    # Verificar dependências
+    try:
+        subprocess.run(["openssl", "version"], capture_output=True, timeout=5)
+    except (FileNotFoundError, subprocess.SubprocessError):
+        erro("OpenSSL não encontrado. Instale com: pkg install openssl-tool")
+        sys.exit(1)
+
+    # ── Gerar certificados (se não existirem) ──
+    certs_dir = os.path.join(CONFIG_DIR, "certs")
+    ca_der = os.path.join(certs_dir, "ca-cert.der")
+
+    if not os.path.exists(ca_der):
+        info("Gerando certificados CA + servidor (válidos por 10 anos)...")
+        result = subprocess.run(
+            [sys.executable, DOT_PROXY_SCRIPT, "--gen-certs"],
+            capture_output=True, text=True, timeout=30
+        )
+        print(result.stdout)
+        if result.returncode != 0:
+            erro(f"Falha ao gerar certificados: {result.stderr}")
+            sys.exit(1)
+        sucesso("Certificados gerados!")
+    else:
+        sucesso("Certificados já existem")
+
+    # ── Verificar se netshild está rodando ──
+    rodando, pid_info = _servidor_rodando()
+    if not rodando:
+        print()
+        info("Iniciando netshild (servidor DNS bloqueador)...")
+        class StartArgs:
+            port = PORTA_PADRAO
+            host = "127.0.0.1"
+            verbose = False
+            cname_uncloak = True
+        cmd_start(StartArgs())
+
+        rodando, pid_info = _servidor_rodando()
+        if not rodando:
+            erro("Falha ao iniciar netshild.")
+            sys.exit(1)
+
+    # ── Copiar CA para download ──
+    download_path = os.path.join(HOME, "storage", "downloads", "netshield-ca.der")
+    try:
+        import shutil
+        os.makedirs(os.path.dirname(download_path), exist_ok=True)
+        shutil.copy2(ca_der, download_path)
+        sucesso(f"CA copiada para Downloads: {download_path}")
+    except Exception as e:
+        aviso(f"Não foi possível copiar CA para Downloads: {e}")
+        info(f"CA disponível em: {ca_der}")
+
+    # ── Detectar IP ──
+    ip_rede = _detectar_ip_rede() or "127.0.0.1"
+    hostname_dns = f"{ip_rede}.nip.io"
+
+    # ── Iniciar DoT proxy em background ──
+    print()
+    info("Iniciando proxy DNS-over-TLS (porta 853)...")
+    log_path = os.path.join(LOGS_DIR, "dot_proxy.log")
+    processo = subprocess.Popen(
+        [sys.executable, DOT_PROXY_SCRIPT],
+        stdout=open(log_path, "a"),
+        stderr=subprocess.STDOUT,
+    )
+
+    # Aguardar inicialização
+    import time
+    time.sleep(2)
+
+    if processo.poll() is None:
+        sucesso(f"Proxy DoT rodando (PID: {processo.pid})")
+        # ── Mostrar instruções ──
+        print()
+        print(Cores.texto("╔══════════════════════════════════════════════════════╗", Cores.VERDE))
+        print(Cores.texto("║  ✅ Tudo pronto! Configure o Private DNS agora:    ║", Cores.VERDE))
+        print(Cores.texto("╚══════════════════════════════════════════════════════╝", Cores.VERDE))
+        print()
+        print(f"  {Cores.texto('Passo 1 — Instalar certificado CA no Android:', Cores.NEGRITO)}")
+        print(f"    1. Abra o app 'Arquivos' → Downloads → netshield-ca.der")
+        print(f"    2. Toque no arquivo → 'Instalar certificado' → Confirme")
+        print(f"    (ou: Ajustes → Segurança → Credenciais → Instalar)")
+        print()
+        print(f"  {Cores.texto('Passo 2 — Configurar Private DNS:', Cores.NEGRITO)}")
+        print(f"    Ajustes → Rede → DNS Privado → {Cores.texto(hostname_dns, Cores.CIANO)}")
+        print()
+        print(f"  {Cores.texto('Passo 3 — Testar (após configurar):', Cores.NEGRITO)}")
+        print(f"    Acesse um site com anúncios → tudo bloqueado! 🛡️")
+        print()
+        print(f"  Para ver logs do DoT:")
+        print(f"    tail -f {log_path}")
+        print()
+    else:
+        aviso("Proxy DoT não pode usar porta 853 (EXIGE ROOT).")
+        print()
+        print(Cores.texto("╔══════════════════════════════════════════════════════╗", Cores.AMARELO))
+        print(Cores.texto("║  ⚠️  Private DNS exige porta 853 (porta privilegiada) ║", Cores.AMARELO))
+        print(Cores.texto("║  Sem root no Android, não é possível usar DoT.      ║", Cores.AMARELO))
+        print(Cores.texto("╚══════════════════════════════════════════════════════╝", Cores.AMARELO))
+        print()
+        print(f"  {Cores.texto('O que funciona AGORA sem root:', Cores.VERDE)}")
+        print(f"  {Cores.texto('1. shield network', Cores.CIANO)} — Bloqueia anúncios na REDE WiFi toda")
+        print(f"     Outros dispositivos usam 192.168.1.4:5353 como DNS")
+        print(f"     (configure manualmente no WiFi de cada um)")
+        print()
+        print(f"  {Cores.texto('2. shield start', Cores.CIANO)} — Bloqueia neste celular")
+        print(f"     Para apps que aceitam DNS customizado (browsers, etc.)")
+        print(f"     Configure o DNS como 127.0.0.1:5353 no app")
+        print()
+        print(f"  {Cores.texto('3. Para bloquear TUDO neste celular sem root:', Cores.NEGRITO)}")
+        print(f"     Instale PersonalDNSfilter (F-Droid, gratuito)")
+        print(f"     Configure upstream → 127.0.0.1:5353")
+        print(f"     Ative a VPN → TODO tráfego DNS passa pelo netshild! 🛡️")
+        print()
+        print(f"  (PersonalDNSfilter não é um app de bloqueio — é um")
+        print(f"   redirecionador de DNS, e o bloqueio é feito pelo netshild)")
+        print()
+
+
+# =============================================================================
 # COMANDO: help
 # =============================================================================
 
@@ -1549,6 +1683,10 @@ def cmd_help(args):
     print("  boot-disable         Remover auto-start")
     print("  (Requer Termux:Boot instalado da F-Droid)")
     print()
+    print(Cores.texto("DNS PRIVADO (sem root, sem apps):", Cores.CIANO))
+    print("  dns-self             Configurar DNS-over-TLS + Private DNS nativo")
+    print("                       Faz todo o Android usar o netshild 🛡️")
+    print()
     print(Cores.texto("EXEMPLOS:", Cores.NEGRITO))
     print("  shield start         # Iniciar bloqueio")
     print("  shield status        # Ver se está rodando")
@@ -1597,6 +1735,9 @@ def main():
 
     elif comando == "boot-disable":
         cmd_boot_disable(args)
+
+    elif comando in ("dns-self", "private-dns", "dot"):
+        cmd_dns_self(args)
 
     elif comando == "stop":
         cmd_stop(args)
@@ -1672,7 +1813,7 @@ def main():
         info("Comandos disponíveis:")
         print("  install, start, network, stop, restart, status, reload,")
         print("  update, logs, analyze, stats, whitelist, config,")
-        print("  boot-enable, boot-disable, uninstall, help")
+        print("  dns-self, boot-enable, boot-disable, uninstall, help")
         print()
         info("Use: shield help  (para ajuda detalhada)")
         sys.exit(1)

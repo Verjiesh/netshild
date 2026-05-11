@@ -2,25 +2,24 @@
 # =============================================================================
 # TermuxNetShield — Auto-start (Termux:Boot)
 # =============================================================================
-# Coloque este script em ~/.termux/boot/ para iniciar o netshild
-# automaticamente ao ligar o celular.
+# Inicia o netshild automaticamente ao ligar o celular.
 #
 # Pré-requisito: Instale Termux:Boot (F-Droid) e execute:
 #   shield boot-enable
 # =============================================================================
 
-# Detecta o diretório do projeto (funciona mesmo com symlink do Termux:Boot)
+# Detecta o diretório do projeto
 SCRIPT="$(readlink -f "$0")"
 PROJETO="$(dirname "$SCRIPT")"
-
-# Se estiver em ~/.termux/boot/, sobe até o ~/netshild
 if [[ "$PROJETO" == *".termux/boot"* ]]; then
     PROJETO="$HOME/netshild"
 fi
 
-# Aguardar rede ficar disponível
-sleep 15
+# Aguardar rede ficar disponível e sistema carregar
+sleep 20
 
-# Iniciar servidor DNS
+# Iniciar servidor DNS bloqueador
 cd "$PROJETO" || exit 1
-exec python3 shield.py start --host 0.0.0.0 >> "$PROJETO/logs/boot.log" 2>&1
+python3 shield.py start >> "$PROJETO/logs/boot.log" 2>&1
+
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] netshild iniciado" >> "$PROJETO/logs/boot.log"
