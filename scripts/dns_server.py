@@ -22,6 +22,8 @@ import signal
 import socket
 import logging
 import argparse
+import threading
+from collections import OrderedDict
 from datetime import datetime
 
 try:
@@ -58,8 +60,10 @@ TIMEOUT_UPSTREAM = 2.0  # segundos
 # Muitos trackers usam CNAMEs para disfarçar (ex: analitica.banco.com → tracker.ads.com)
 CNAME_UNCLOAK = True  # Pode ser desligado com --no-cname-uncloak
 
-# Estatísticas por cliente (IP → contagem)
-ESTATISTICAS_CLIENTES = {}
+# Estatísticas por cliente (IP → contagem) com LRU cache para evitar vazamento de memória
+MAX_CLIENTES_ESTASTICAS = 1000
+ESTATISTICAS_CLIENTES = OrderedDict()
+ESTATISTICAS_LOCK = threading.Lock()
 
 
 # =============================================================================
@@ -194,9 +198,16 @@ class DNSHandler:
             qtype, qname, addr[0], addr[1]
         )
 
-        # Estatísticas por cliente
+        # Estatísticas por cliente com LRU e thread-safe
         ip_cliente = addr[0]
-        ESTATISTICAS_CLIENTES[ip_cliente] = ESTATISTICAS_CLIENTES.get(ip_cliente, 0) + 1
+        with ESTATISTICAS_LOCK:
+            if ip_cliente in ESTATISTICAS_CLIENTES:
+                ESTATISTICAS_CLIENTES.move_to_end(ip_cliente)
+                ESTATISTICAS_CLIENTES[ip_cliente] += 1
+            else:
+                if len(ESTATISTICAS_CLIENTES) >= MAX_CLIENTES_ESTASTICAS:
+                    ESTATISTICAS_CLIENTES.popitem(last=False)
+                ESTATISTICAS_CLIENTES[ip_cliente] = 1
 
         # Verificar whitelist PRIMEIRO — domínios na whitelist nunca são bloqueados
         if self.blocklist.esta_na_whitelist(qname):

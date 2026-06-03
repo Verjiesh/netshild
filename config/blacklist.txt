@@ -1,0 +1,2 @@
+# Blacklist personalizada\n# Adicione domínios um por linha
+ads.example.com
