@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/env python3
+#!/usr/bin/env python3
 """
 ╔══════════════════════════════════════════╗
 ║  TermuxNetShield — CLI Unificada 🛡️     ║
@@ -17,9 +17,11 @@ import os
 import re
 import signal
 import socket
+import ssl
 import subprocess
 import sys
 import time
+import urllib.request
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -41,6 +43,12 @@ BLOCKLIST_FILE = os.path.join(BLOCKLIST_DIR, "ads.conf")
 WHITELIST_FILE = os.path.join(CONFIG_DIR, "whitelist.txt")
 CUSTOM_BLOCKLIST_FILE = os.path.join(CONFIG_DIR, "custom_blocklist.txt")
 DNS_SERVER_SCRIPT = os.path.join(SCRIPTS_DIR, "dns_server.py")
+
+# Ignorar processos zombie (subprocess.Popen sem wait)
+try:
+    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+except (OSError, ValueError):
+    pass  # Nem todos os sistemas suportam SIG_IGN
 
 # ─── Constantes ───────────────────────────────────────────────────────────────
 PORTA_PADRAO = 5353
@@ -819,11 +827,16 @@ def cmd_update(args):
         sys.stdout.flush()
 
         try:
+            # Criar contexto SSL com verificação de certificado
+            ssl_context = ssl.create_default_context()
+            opener = urllib.request.build_opener(
+                urllib.request.HTTPSHandler(context=ssl_context)
+            )
             req = urllib.request.Request(
                 url,
                 headers={"User-Agent": "TermuxNetShield/2.0"}
             )
-            with urllib.request.urlopen(req, timeout=60) as resp:
+            with opener.open(req, timeout=60) as resp:
                 content = resp.read()
             with open(arquivo_temp, "wb") as f:
                 f.write(content)
@@ -1343,7 +1356,17 @@ def cmd_uninstall(args):
 
     print(Cores.texto("⚠️  ISSO REMOVERÁ TODO O PROJETO PERMANENTEMENTE!", Cores.VERMELHO))
     print()
-    confirm = input("  Digite 'sim' para confirmar: ").strip().lower()
+    
+    # Suporte a modo não-interativo (--force)
+    if getattr(args, 'force', False):
+        confirm = "sim"
+    else:
+        try:
+            confirm = input("  Digite 'sim' para confirmar: ").strip().lower()
+        except EOFError:
+            aviso("EOF detectado. Use --force para modo não-interativo.")
+            return
+    
     if confirm != "sim":
         aviso("Desinstalação cancelada.")
         return
@@ -1662,13 +1685,17 @@ def cmd_dns_toggle(args):
     if not instalado:
         # ── Baixar APK ──
         info("Baixando PersonalDNSfilter do F-Droid...")
-        import urllib.request
         try:
+            # Criar contexto SSL com verificação de certificado
+            ssl_context = ssl.create_default_context()
+            opener = urllib.request.build_opener(
+                urllib.request.HTTPSHandler(context=ssl_context)
+            )
             req = urllib.request.Request(
                 APK_URL,
                 headers={"User-Agent": "TermuxNetShield/2.0"}
             )
-            with urllib.request.urlopen(req, timeout=60) as resp:
+            with opener.open(req, timeout=60) as resp:
                 dados_apk = resp.read()
             os.makedirs(os.path.dirname(APK_PATH), exist_ok=True)
             with open(APK_PATH, "wb") as f:
@@ -1931,7 +1958,11 @@ def main():
             cmd_config(args)
 
     elif comando == "uninstall":
-        cmd_uninstall(args)
+        p = argparse.ArgumentParser()
+        p.add_argument("--force", "-f", action="store_true",
+                       help="Pular confirmação interativa")
+        subargs = p.parse_args(rest)
+        cmd_uninstall(subargs)
 
     elif comando in ("help", "--help", "-h", None):
         cmd_help(args)

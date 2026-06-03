@@ -1,6 +1,37 @@
+```
+# Python
 __pycache__/
 *.pyc
-logs/*
-!logs/.gitkeep
-relatorios/*
-!relatorios/.gitkeep
+*.pyo
+*.pyd
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Dependencies
+venv/
+.venv/
+pip-log.txt
+pipenv.lock
+
+# Coverage
+.coverage
+htmlcov/
+coverage/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+```
